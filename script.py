@@ -42,8 +42,8 @@ yesterday_date = (now - datetime.timedelta(days=1)).strftime("%Y-%m-%d")
 
 # 2. Get today's predictions
 p1_tom, p1_da, p1_sd = get_forecasts(PLACES[0]["lat"], PLACES[0]["lon"])
-_, p2_tom, p2_da, p2_sd = get_forecasts(PLACES[1]["lat"], PLACES[1]["lon"])
-_, p3_tom, p3_da, p3_sd = get_forecasts(PLACES[2]["lat"], PLACES[2]["lon"])
+p2_tom, p2_da, p2_sd = get_forecasts(PLACES[1]["lat"], PLACES[1]["lon"])
+p3_tom, p3_da, p3_sd = get_forecasts(PLACES[2]["lat"], PLACES[2]["lon"])
 
 # Create today's fresh row (blank actual columns at the end)
 new_row = [
