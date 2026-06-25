@@ -11,7 +11,6 @@ PLACES = [
 FILENAME = "weather_data.csv"
 
 def get_historical_actuals(lat, lon, target_date_str):
-    """Fetches the true historical max temperature and humidity for yesterday."""
     if lat is None or lon is None:
         return "", ""
     try:
@@ -22,7 +21,6 @@ def get_historical_actuals(lat, lon, target_date_str):
         return "", ""
 
 def get_forecasts(lat, lon):
-    """Fetches upcoming predictions."""
     if lat is None or lon is None:
         return (None, None), (None, None), (None, None)
     try:
@@ -35,54 +33,49 @@ def get_forecasts(lat, lon):
     except:
         return (None, None), (None, None), (None, None)
 
-# 1. Calculate target dates based on current time
+# 1. Date math
 now = datetime.datetime.now()
 c_date, c_time = now.strftime("%Y-%m-%d"), now.strftime("%H:%M")
 yesterday_date = (now - datetime.timedelta(days=1)).strftime("%Y-%m-%d")
 
-# 2. Get predictions
+# 2. Extract upcoming values
 p1_tom, p1_da, p1_sd = get_forecasts(PLACES[0]["lat"], PLACES[0]["lon"])
 p2_tom, p2_da, p2_sd = get_forecasts(PLACES[1]["lat"], PLACES[1]["lon"])
 p3_tom, p3_da, p3_sd = get_forecasts(PLACES[2]["lat"], PLACES[2]["lon"])
 
-# Create today's fresh row (blank actual columns at the end)
+# Build row mapping from Column A to V
 new_row = [
     c_date, c_time,
     p1_tom[0], p1_tom[1], p2_tom[0], p2_tom[1], p3_tom[0], p3_tom[1],
     p1_da[0], p1_da[1], p2_da[0], p2_da[1], p3_da[0], p3_da[1],
     p1_sd[0], p1_sd[1], p2_sd[0], p2_sd[1], p3_sd[0], p3_sd[1],
-    "", ""  # Status_T (Col U) and Status_H (Col V) start blank
+    "", ""  # Status_T (U) and Status_H (V) start empty
 ]
 new_row_str = ",".join(["" if v is None else str(v) for v in new_row]) + "\n"
 
-# Ensure file headers exist
 if not os.path.exists(FILENAME):
     headers = "Date,Time,P1_T1,P1_H1,P2_T1,P2_H1,P3_T1,P3_H1,P1_T2,P1_H2,P2_T2,P2_H2,P3_T2,P3_H2,P1_T3,P1_H3,P2_T3,P2_H3,P3_T3,P3_H3,Status_T,Status_H\n"
     with open(FILENAME, "w") as f: f.write(headers)
 
-# 3. Read file and overwrite ONLY yesterday's lines
+# 3. Process historical loops cleanly
 with open(FILENAME, "r") as f:
     lines = f.readlines()
 
-# Get the actual highest temp and humidity for yesterday from weather API
 yest_t, yest_h = get_historical_actuals(PLACES[0]["lat"], PLACES[0]["lon"], yesterday_date)
 
-updated_lines = [lines[0]] # Keep headers
+updated_lines = [lines[0]]
 for line in lines[1:]:
     cols = line.strip().split(",")
-    
-    # Match ONLY yesterday's date string. Older dates stay untouched.
+    # Update yesterday's entries exclusively
     if cols[0] == yesterday_date and yest_t and yest_h:
         if len(cols) >= 22:
-            cols[-2] = yest_t  
-            cols[-1] = yest_h  
-    
+            cols[-2] = yest_t
+            cols[-1] = yest_h
     updated_lines.append(",".join(cols) + "\n")
 
-# Append today's new hourly row
 updated_lines.append(new_row_str)
 
-# Max limit extended to 1 year (8760 hours)
+# 1-Year Capacity cap
 if len(updated_lines) > 8761:
     updated_lines = [updated_lines[0]] + updated_lines[-8760:]
 
