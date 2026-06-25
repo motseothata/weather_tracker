@@ -40,7 +40,7 @@ now = datetime.datetime.now()
 c_date, c_time = now.strftime("%Y-%m-%d"), now.strftime("%H:%M")
 yesterday_date = (now - datetime.timedelta(days=1)).strftime("%Y-%m-%d")
 
-# 2. Get today's predictions
+# 2. Get predictions
 p1_tom, p1_da, p1_sd = get_forecasts(PLACES[0]["lat"], PLACES[0]["lon"])
 p2_tom, p2_da, p2_sd = get_forecasts(PLACES[1]["lat"], PLACES[1]["lon"])
 p3_tom, p3_da, p3_sd = get_forecasts(PLACES[2]["lat"], PLACES[2]["lon"])
@@ -51,7 +51,7 @@ new_row = [
     p1_tom[0], p1_tom[1], p2_tom[0], p2_tom[1], p3_tom[0], p3_tom[1],
     p1_da[0], p1_da[1], p2_da[0], p2_da[1], p3_da[0], p3_da[1],
     p1_sd[0], p1_sd[1], p2_sd[0], p2_sd[1], p3_sd[0], p3_sd[1],
-    "", ""  # Columns U and V (Status_T, Status_H) start blank
+    "", ""  # Status_T (Col U) and Status_H (Col V) start blank
 ]
 new_row_str = ",".join(["" if v is None else str(v) for v in new_row]) + "\n"
 
@@ -71,17 +71,18 @@ updated_lines = [lines[0]] # Keep headers
 for line in lines[1:]:
     cols = line.strip().split(",")
     
-    # Match ONLY yesterday's date string. Older dates (22nd, 21st, etc.) skip this and stay untouched.
+    # Match ONLY yesterday's date string. Older dates stay untouched.
     if cols[0] == yesterday_date and yest_t and yest_h:
-        cols[-2] = yest_t  # Write highest actual temp
-        cols[-1] = yest_h  # Write highest actual humidity
+        if len(cols) >= 22:
+            cols[-2] = yest_t  
+            cols[-1] = yest_h  
     
     updated_lines.append(",".join(cols) + "\n")
 
 # Append today's new hourly row
 updated_lines.append(new_row_str)
 
-# EXTENDED TO 1 YEAR: Keep file length bounded to 365 days max (8760 hourly entries + 1 header row)
+# Max limit extended to 1 year (8760 hours)
 if len(updated_lines) > 8761:
     updated_lines = [updated_lines[0]] + updated_lines[-8760:]
 
